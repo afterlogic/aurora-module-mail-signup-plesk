@@ -1,0 +1,34 @@
+{
+	"Disabled": [
+		true,
+		"bool"
+	],
+	"Disabled_Description": [
+		"Setting to true disables the module",
+		"string"
+	],	
+	"PleskHostname": [
+		"localhost",
+		"string"
+	],
+	"PleskHostname_Description": [
+		"Defines hostname of Plesk installation",
+		"string"
+	],
+	"PleskAdminUser": [
+		"admin",
+		"string"
+	],
+	"PleskAdminUser_Description": [
+		"Username of Plesk administrator account",
+		"string"
+	],
+	"PleskAdminPassword": [
+		"",
+		"string"
+	],
+	"PleskAdminPassword_Description": [
+		"Password of Plesk administrator account",
+		"string"
+	]
+}
