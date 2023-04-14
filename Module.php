@@ -20,7 +20,7 @@ namespace Aurora\Modules\MailSignupPlesk;
 class Module extends \Aurora\System\Module\AbstractModule
 {
     /**
-     * @var
+     * @var \PleskX\Api\Client
      */
     private $oClient;
 
@@ -40,7 +40,7 @@ class Module extends \Aurora\System\Module\AbstractModule
      * Creates account with credentials specified in registration form
      *
      * @param array $aArgs New account credentials.
-     * @param type $mResult Is passed by reference.
+     * @param mixed $mResult Is passed by reference.
      */
     public function onAfterSignup($aArgs, &$mResult)
     {
@@ -66,6 +66,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 } catch(\Exception $oException) {
                     throw new \Aurora\System\Exceptions\ApiException(0, $oException, $oException->getMessage());
                 }
+                $iUserId = null;
                 try {
                     $iUserId = \Aurora\Modules\Core\Module::Decorator()->CreateUser(0, $sLogin);
                     $oUser = \Aurora\System\Api::getUserById((int) $iUserId);
@@ -86,8 +87,9 @@ class Module extends \Aurora\System\Module\AbstractModule
                     }
                 } catch (\Exception $oException) {
                     if ($oException instanceof \Aurora\Modules\Mail\Exceptions\Exception &&
-                        $oException->getCode() === \Aurora\Modules\Mail\Enums\ErrorCodes::CannotLoginCredentialsIncorrect) {
-                        \Aurora\Modules\Core\Module::Decorator()->DeleteUser($oUser->Id);
+                        $oException->getCode() === \Aurora\Modules\Mail\Enums\ErrorCodes::CannotLoginCredentialsIncorrect &&
+                        is_int($iUserId) && ($iUserId > 0)) {
+                        \Aurora\Modules\Core\Module::Decorator()->DeleteUser($iUserId);
                     }
                     throw $oException;
                 }
