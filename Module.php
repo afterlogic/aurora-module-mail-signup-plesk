@@ -15,6 +15,8 @@ namespace Aurora\Modules\MailSignupPlesk;
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  *
+ * @property Settings $oModuleSettings
+ *
  * @package Modules
  */
 class Module extends \Aurora\System\Module\AbstractModule
@@ -28,11 +30,11 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $this->subscribeEvent('MailSignup::Signup::before', [$this, 'onAfterSignup']);
 
-        $sPleskHost = $this->getConfig('PleskHostname', 'localhost');
+        $sPleskHost = $this->oModuleSettings->PleskHostname;
         $this->oClient = new \PleskX\Api\Client($sPleskHost);
 
-        $sPleskUser = $this->getConfig('PleskAdminUser', '');
-        $sPleskPass = $this->getConfig('PleskAdminPassword', '');
+        $sPleskUser = $this->oModuleSettings->PleskAdminUser;
+        $sPleskPass = $this->oModuleSettings->PleskAdminPassword;
         $this->oClient->setCredentials($sPleskUser, $sPleskPass);
     }
 
