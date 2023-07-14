@@ -35,6 +35,14 @@ class Module extends \Aurora\System\Module\AbstractModule
 
         $sPleskUser = $this->oModuleSettings->PleskAdminUser;
         $sPleskPass = $this->oModuleSettings->PleskAdminPassword;
+
+        if ($sPleskPass && !\Aurora\System\Utils::IsEncryptedValue($sPleskPass)) {
+            $this->setConfig('PleskAdminPassword', \Aurora\System\Utils::EncryptValue($sPleskPass));
+            $this->saveModuleConfig();
+        } else {
+            $sPleskPass = \Aurora\System\Utils::DecryptValue($sPleskPass);
+        }
+
         $this->oClient->setCredentials($sPleskUser, $sPleskPass);
     }
 

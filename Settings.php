@@ -43,7 +43,7 @@ class Settings extends \Aurora\System\Module\Settings
                 "",
                 "string",
                 null,
-                "Password of Plesk administrator account",
+                "Password of Plesk administrator account. Will be automatically encrypted.",
             ),
         ];
     }
