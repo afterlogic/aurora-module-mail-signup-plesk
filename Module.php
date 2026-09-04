@@ -85,53 +85,57 @@ class Module extends \Aurora\System\Module\AbstractModule
             $bSignMe = isset($aArgs['SignMe']) ? (bool) $aArgs['SignMe'] : false;
 
             $bPrevState = \Aurora\System\Api::skipCheckUserRole(true);
-            [$sUsername, $sDomain] = explode("@", $sLogin);
             try {
+                [$sUsername, $sDomain] = explode("@", $sLogin);
                 $mResult = $this->oClient->site()->get("name", $sDomain);
-            } catch (\Exception $oException) {
-                throw new \Aurora\System\Exceptions\ApiException(0, null, $oException->getMessage());
-            }
 
-            if (is_object($mResult) && isset($mResult->id) && is_numeric($mResult->id)) {
-                $iSiteId = intval($mResult->id);
-                $aResult = array();
-                try {
-                    $mResult2 = $this->oClient->mail()->create($sUsername, $iSiteId, true, $sPassword);
-                } catch(\Exception $oException) {
-                    throw new \Aurora\System\Exceptions\ApiException(0, $oException, $oException->getMessage());
+                if (is_object($mResult) && isset($mResult->id) && is_numeric($mResult->id)) {
+                    $iSiteId = intval($mResult->id);
+                    $aResult = array();
+                    try {
+                        $mResult2 = $this->oClient->mail()->create($sUsername, $iSiteId, true, $sPassword);
+                    } catch(\Exception $oException) {
+                        throw new \Aurora\System\Exceptions\ApiException(0, $oException, $oException->getMessage());
+                    }
+                    $iUserId = null;
+                    try {
+                        $iUserId = \Aurora\Modules\Core\Module::Decorator()->CreateUser(0, $sLogin);
+                        $oUser = \Aurora\System\Api::getUserById((int) $iUserId);
+                        $oAccount = \Aurora\Modules\Mail\Module::Decorator()->CreateAccount($oUser->Id, $sFriendlyName, $sLogin, $sLogin, $sPassword);
+                        if ($oAccount instanceof \Aurora\Modules\Mail\Models\MailAccount) {
+                            $iTime = $bSignMe ? 0 : time();
+                            $sAuthToken = \Aurora\System\Api::UserSession()->Set(
+                                [
+                                    'token'		=> 'auth',
+                                    'sign-me'		=> $bSignMe,
+                                    'id'			=> $oAccount->IdUser,
+                                    'account'		=> $oAccount->Id,
+                                    'account_type'	=> $oAccount->getName()
+                                ],
+                                $iTime
+                            );
+                            $mResult = [\Aurora\System\Application::AUTH_TOKEN_KEY => $sAuthToken];
+                        }
+                    } catch (\Exception $oException) {
+                        if ($oException instanceof \Aurora\Modules\Mail\Exceptions\Exception &&
+                            $oException->getCode() === \Aurora\Modules\Mail\Enums\ErrorCodes::CannotLoginCredentialsIncorrect &&
+                            is_int($iUserId) && ($iUserId > 0)) {
+                            \Aurora\Modules\Core\Module::Decorator()->DeleteUser($iUserId);
+                        }
+                        throw $oException;
+                    }
+                } else {
+                    throw new \Aurora\System\Exceptions\ApiException(0, null, "Site not found");
                 }
-                $iUserId = null;
-                try {
-                    $iUserId = \Aurora\Modules\Core\Module::Decorator()->CreateUser(0, $sLogin);
-                    $oUser = \Aurora\System\Api::getUserById((int) $iUserId);
-                    $oAccount = \Aurora\Modules\Mail\Module::Decorator()->CreateAccount($oUser->Id, $sFriendlyName, $sLogin, $sLogin, $sPassword);
-                    if ($oAccount instanceof \Aurora\Modules\Mail\Models\MailAccount) {
-                        $iTime = $bSignMe ? 0 : time();
-                        $sAuthToken = \Aurora\System\Api::UserSession()->Set(
-                            [
-                                'token'		=> 'auth',
-                                'sign-me'		=> $bSignMe,
-                                'id'			=> $oAccount->IdUser,
-                                'account'		=> $oAccount->Id,
-                                'account_type'	=> $oAccount->getName()
-                            ],
-                            $iTime
-                        );
-                        $mResult = [\Aurora\System\Application::AUTH_TOKEN_KEY => $sAuthToken];
-                    }
-                } catch (\Exception $oException) {
-                    if ($oException instanceof \Aurora\Modules\Mail\Exceptions\Exception &&
-                        $oException->getCode() === \Aurora\Modules\Mail\Enums\ErrorCodes::CannotLoginCredentialsIncorrect &&
-                        is_int($iUserId) && ($iUserId > 0)) {
-                        \Aurora\Modules\Core\Module::Decorator()->DeleteUser($iUserId);
-                    }
+            } catch (\Exception $oException) {
+                if ($oException instanceof \Aurora\System\Exceptions\ApiException) {
                     throw $oException;
                 }
-            } else {
-                throw new \Aurora\System\Exceptions\ApiException(0, null, "Site not found");
+                throw new \Aurora\System\Exceptions\ApiException(0, null, $oException->getMessage());
+            } finally {
+                \Aurora\System\Api::skipCheckUserRole($bPrevState);
             }
-            \Aurora\System\Api::skipCheckUserRole($bPrevState);
+            return true;
         }
-        return true;
     }
 }
